@@ -103,10 +103,10 @@ def save_marks(request):
         except (ValueError, TypeError):
             return Response({"error": "descriptive_marks and assignment_marks must be integers."}, status=400)
 
-        if not (0 <= descriptive <= 20):
-            return Response({"error": "descriptive_marks must be between 0 and 20."}, status=400)
-        if not (0 <= assignment <= 10):
-            return Response({"error": "assignment_marks must be between 0 and 10."}, status=400)
+        if not (10 <= descriptive <= 20):
+            return Response({"error": "descriptive_marks must be between 10 and 20."}, status=400)
+        if not (5 <= assignment <= 10):
+            return Response({"error": "assignment_marks must be between 5 and 10."}, status=400)
 
         total = descriptive + assignment
 
