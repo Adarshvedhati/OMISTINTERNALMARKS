@@ -1,0 +1,378 @@
+{% extends 'aims/base.html' %}
+{% load static %}
+
+{% block title %}Marks Entry — {{ subject }}{% endblock %}
+
+{% block content %}
+<div class="page-bg" id="page-wrapper">
+  <div class="card" id="main-card">
+    <!-- Content injected by JavaScript below -->
+    <div id="app-root"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── Configuration passed from Django view ─────────────────────────────────
+const CFG = {
+  facultyName: "{{ faculty_name|escapejs }}",
+  collegeCode: "{{ college_code|escapejs }}",
+  course:      "{{ course|escapejs }}",
+  semester:    {{ semester|default:0 }},
+  subject:     "{{ subject|escapejs }}",
+  internal:    "{{ internal|escapejs }}",
+  apiBase:     "/api",          // Django REST API base (same origin)
+  backUrl:     "{% url 'aims:index' %}"
+};
+
+// ─── App state ─────────────────────────────────────────────────────────────
+let students    = [];
+let idx         = 0;
+let saving      = false;
+let descriptive = '';
+let assignment  = '';
+let marks       = '';
+
+const root = document.getElementById('app-root');
+
+// Guard: if no session data, bounce back
+if (!CFG.collegeCode) { window.location.href = CFG.backUrl; }
+
+// ─── Utility: safe HTML escape ─────────────────────────────────────────────
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Render helpers ────────────────────────────────────────────────────────
+function renderLoading() {
+  root.innerHTML = `
+    <div class="form-body" style="align-items:center;text-align:center;">
+      <div class="spinner"></div>
+      <p>Loading students…</p>
+    </div>`;
+}
+
+function renderError(msg, showBack = true) {
+  root.innerHTML = `
+    <div class="form-body">
+      <p class="err">${esc(msg)}</p>
+      ${showBack
+        ? `<button class="btn-secondary" onclick="window.location.href='${CFG.backUrl}'">← Back</button>`
+        : ''}
+    </div>`;
+}
+
+function renderDone() {
+  root.innerHTML = `
+    <div class="card-header success-header">
+      <div style="font-size:3rem;">✅</div>
+      <h1>All Marks Saved!</h1>
+      <p>${esc(students.length)} students completed for ${esc(CFG.subject)} — ${esc(CFG.internal)}</p>
+    </div>
+    <div class="form-body">
+      <div class="summary-box">
+        <p><strong>Faculty:</strong> ${esc(CFG.facultyName)}</p>
+        <p><strong>College:</strong> ${esc(CFG.collegeCode)}</p>
+        <p><strong>Course:</strong>  ${esc(CFG.course)} · Semester ${esc(CFG.semester)}</p>
+        <p><strong>Subject:</strong> ${esc(CFG.subject)}</p>
+        <p><strong>Internal:</strong> ${esc(CFG.internal)}</p>
+      </div>
+      <button class="btn-primary" id="btn-download">⬇ Download Excel Report</button>
+      <button class="btn-secondary" onclick="window.location.href='${CFG.backUrl}'">
+        ← Enter Marks for Another Subject
+      </button>
+    </div>`;
+
+  document.getElementById('btn-download').addEventListener('click', downloadExcel);
+}
+
+function renderMain(errorMsg = '') {
+  if (idx >= students.length) { renderDone(); return; }
+
+  const student  = students[idx];
+  const progress = Math.round((idx / students.length) * 100);
+  const totalStr = (CFG.course === 'MCA' && descriptive !== '' && assignment !== '')
+    ? `<div class="total-box">Total: <strong>${(Number(descriptive)||0)+(Number(assignment)||0)}</strong> / 30</div>`
+    : '';
+
+  // Build roll-no dropdown options
+  const rollOptions = students.map((s, i) =>
+    `<option value="${esc(s.id)}" ${i === idx ? 'selected' : ''}>${esc(s.roll_no)}</option>`
+  ).join('');
+
+  // Build marks fields
+  const marksHtml = CFG.course === 'MCA' ? `
+    <div class="marks-section">
+      <div class="marks-row">
+        <div class="field">
+          <label>Descriptive Marks <span class="max">(max 20)</span></label>
+          <input id="inp-desc" type="number" min="0" max="20" step="0.5"
+            value="${esc(descriptive)}" placeholder="0 – 20" autofocus>
+        </div>
+        <div class="field">
+          <label>Assignment Marks <span class="max">(max 10)</span></label>
+          <input id="inp-asgn" type="number" min="0" max="10" step="0.5"
+            value="${esc(assignment)}" placeholder="0 – 10">
+        </div>
+      </div>
+      ${totalStr}
+    </div>` : `
+    <div class="field">
+      <label>Marks <span class="max">(max 20)</span></label>
+      <input id="inp-marks" type="number" min="0" max="20" step="0.5"
+        value="${esc(marks)}" placeholder="0 – 20" autofocus>
+    </div>`;
+
+  root.innerHTML = `
+    <div class="card-header">
+      <h1>Internal Marks Entry</h1>
+      <p>${esc(CFG.subject)} · ${esc(CFG.internal)}</p>
+    </div>
+    <div class="form-body">
+
+      <!-- Progress bar -->
+      <div class="progress-wrap">
+        <div class="progress-bar" style="width:${progress}%"></div>
+      </div>
+      <p class="progress-label">
+        Student <strong>${idx + 1}</strong> of <strong>${students.length}</strong>
+      </p>
+
+      <!-- Student card -->
+      <div class="student-card">
+        <div class="student-meta">
+          <span class="badge">${esc(student.college_code)}</span>
+          <span class="badge">${esc(CFG.course)} · Sem ${esc(CFG.semester)}</span>
+        </div>
+        <h2>
+          <select class="rollno-select" id="roll-select">
+            ${rollOptions}
+          </select>
+        </h2>
+        <h3>${esc(student.name)}</h3>
+        <p class="faculty-line">Faculty: ${esc(CFG.facultyName)}</p>
+      </div>
+
+      <!-- Error message -->
+      ${errorMsg ? `<p class="err" id="err-msg">${esc(errorMsg)}</p>` : '<p id="err-msg" style="display:none;"></p>'}
+
+      <!-- Marks fields -->
+      ${marksHtml}
+
+      <!-- Action buttons -->
+      <div class="btn-row">
+        <button class="btn-primary" id="btn-save" ${saving ? 'disabled' : ''}>
+          ${saving ? 'Saving…' : 'Save & Next →'}
+        </button>
+        <button class="btn-skip" id="btn-skip" ${saving ? 'disabled' : ''} title="Skip without saving">
+          Skip
+        </button>
+      </div>
+
+      ${idx > 0
+        ? `<button class="btn-back" id="btn-prev">← Previous Student</button>`
+        : ''}
+    </div>`;
+
+  // ── Bind events ────────────────────────────────────────────────────────
+  // Sync inputs to state
+  if (CFG.course === 'MCA') {
+    const descEl = document.getElementById('inp-desc');
+    const asgnEl = document.getElementById('inp-asgn');
+    descEl.addEventListener('input', () => {
+      const v = descEl.value;
+      if (v === '' || (Number(v) >= 0 && Number(v) <= 20)) {
+        descriptive = v;
+        refreshTotal();
+      }
+    });
+    asgnEl.addEventListener('input', () => {
+      const v = asgnEl.value;
+      if (v === '' || (Number(v) >= 0 && Number(v) <= 10)) {
+        assignment = v;
+        refreshTotal();
+      }
+    });
+  } else {
+    document.getElementById('inp-marks')?.addEventListener('input', (e) => {
+      marks = e.target.value;
+    });
+  }
+
+  document.getElementById('roll-select').addEventListener('change', (e) => {
+    const newIdx = students.findIndex(s => String(s.id) === e.target.value);
+    if (newIdx !== -1) { clearFields(); idx = newIdx; fetchExistingMarks(); }
+  });
+
+  document.getElementById('btn-save').addEventListener('click', () => handleSave(false));
+  document.getElementById('btn-skip').addEventListener('click', () => handleSave(true));
+  document.getElementById('btn-prev')?.addEventListener('click', () => {
+    clearFields(); idx--; fetchExistingMarks();
+  });
+}
+
+function refreshTotal() {
+  const box = document.querySelector('.total-box');
+  if (descriptive !== '' && assignment !== '') {
+    const t = (Number(descriptive) || 0) + (Number(assignment) || 0);
+    if (box) {
+      box.innerHTML = `Total: <strong>${t}</strong> / 30`;
+      box.style.display = '';
+    }
+  } else if (box) {
+    box.style.display = 'none';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('err-msg');
+  if (el) { el.textContent = msg; el.style.display = ''; }
+}
+
+// ─── Load students from API ────────────────────────────────────────────────
+function loadStudents() {
+  renderLoading();
+  const params = new URLSearchParams({
+    college_code: CFG.collegeCode,
+    course:       CFG.course,
+    semester:     CFG.semester
+  });
+  fetch(`${CFG.apiBase}/students/?${params}`)
+    .then(r => r.json())
+    .then(data => {
+      students = data;
+      if (!students.length) {
+        renderError(
+          `No students found for ${CFG.course} Sem ${CFG.semester}, College ${CFG.collegeCode}.\nCheck that students have been imported.`
+        );
+        return;
+      }
+      idx = 0;
+      fetchExistingMarks();
+    })
+    .catch(() => renderError('Could not load students. Check backend is running.'));
+}
+
+// ─── Fetch already-saved marks for current student ─────────────────────────
+function fetchExistingMarks() {
+  const student = students[idx];
+  if (!student) { renderMain(); return; }
+
+  const params = new URLSearchParams({
+    student_id: student.id,
+    subject:    CFG.subject,
+    internal:   CFG.internal
+  });
+
+  fetch(`${CFG.apiBase}/get-marks/?${params}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.found) {
+        if (CFG.course === 'MCA') {
+          descriptive = String(data.descriptive_marks ?? data.exam_marks ?? '');
+          assignment  = String(data.assignment_marks ?? '');
+        } else {
+          marks = String(data.marks ?? '');
+        }
+      } else {
+        clearFields();
+      }
+      renderMain();
+    })
+    .catch(() => { clearFields(); renderMain(); });
+}
+
+// ─── Save marks ────────────────────────────────────────────────────────────
+function handleSave(skip) {
+  const student = students[idx];
+  if (!student) return;
+
+  // Client-side validation (mirrors MarksEntry.jsx)
+  if (!skip) {
+    if (CFG.course === 'MCA') {
+      if (descriptive === '' || assignment === '') {
+        renderMain('Please enter both Descriptive and Assignment marks.'); return;
+      }
+      if (Number(descriptive) < 0 || Number(descriptive) > 20) {
+        renderMain('Descriptive marks must be between 0 and 20.'); return;
+      }
+      if (Number(assignment) < 0 || Number(assignment) > 10) {
+        renderMain('Assignment marks must be between 0 and 10.'); return;
+      }
+    } else {
+      if (marks === '') { renderMain('Please enter marks.'); return; }
+      if (Number(marks) < 0 || Number(marks) > 20) {
+        renderMain('Marks must be between 0 and 20.'); return;
+      }
+    }
+  }
+
+  saving = true;
+  renderMain();   // re-render with Save button disabled
+
+  const payload = {
+    student_id:   student.id,
+    faculty_name: CFG.facultyName,
+    college_code: CFG.collegeCode,
+    course:       CFG.course,
+    subject:      CFG.subject,
+    internal:     CFG.internal
+  };
+
+  if (!skip) {
+    if (CFG.course === 'MCA') {
+      payload.descriptive_marks = Number(descriptive);
+      payload.assignment_marks  = Number(assignment);
+    } else {
+      payload.marks = Number(marks);
+    }
+  }
+
+  const doSave = skip
+    ? Promise.resolve()   // no API call for skip
+    : fetch(`${CFG.apiBase}/save-marks/`, {
+        method:  'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken':  getCookie('csrftoken')
+        },
+        body: JSON.stringify(payload)
+      }).then(r => {
+        if (!r.ok) return r.json().then(d => Promise.reject(d.error || 'Error saving.'));
+      });
+
+  doSave
+    .then(() => { saving = false; clearFields(); idx++; fetchExistingMarks(); })
+    .catch(msg => { saving = false; renderMain(typeof msg === 'string' ? msg : 'Error saving marks. Please try again.'); });
+}
+
+// ─── Download Excel ────────────────────────────────────────────────────────
+function downloadExcel() {
+  const params = new URLSearchParams({
+    faculty:  CFG.facultyName,
+    subject:  CFG.subject,
+    college:  CFG.collegeCode,
+    course:   CFG.course,
+    semester: CFG.semester,
+    internal: CFG.internal
+  });
+  window.open(`${CFG.apiBase}/download-excel/?${params}`, '_blank');
+}
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function clearFields() {
+  descriptive = ''; assignment = ''; marks = '';
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
+// ─── Boot ──────────────────────────────────────────────────────────────────
+loadStudents();
+</script>
+{% endblock %}

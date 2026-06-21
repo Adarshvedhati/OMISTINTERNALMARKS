@@ -1,0 +1,302 @@
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #e8edf5;
+  min-height: 100vh;
+}
+
+/* ── Page wrapper ───────────────────────────────────────────── */
+.page-bg {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+  background: linear-gradient(135deg, #003366 0%, #0055a5 50%, #003366 100%);
+}
+
+.page-bg.centered { align-items: center; }
+.rollno-select {
+  width: 100%;
+  max-width: 300px;
+  padding: 10px 14px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #fff;
+  border: 2px solid #dbeafe;
+  border-radius: 10px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s ease;
+  appearance: none;
+
+  /* custom dropdown arrow */
+  background-image:
+    linear-gradient(45deg, transparent 50%, #2563eb 50%),
+    linear-gradient(135deg, #2563eb 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 35px;
+}
+
+.rollno-select:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+
+.rollno-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.rollno-select option {
+  font-size: 1rem;
+  padding: 10px;
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+.card {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.22);
+  overflow: hidden;
+}
+
+/* ── Card header ────────────────────────────────────────────── */
+.card-header {
+  background: linear-gradient(135deg, #003366, #0055a5);
+  color: #fff;
+  padding: 2rem;
+  text-align: center;
+}
+.card-header .college-logo { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.card-header h1 { font-size: 1.35rem; font-weight: 700; margin-bottom: 0.3rem; }
+.card-header p  { font-size: 0.85rem; opacity: 0.85; }
+
+.success-header { background: linear-gradient(135deg, #1a7a3a, #2ecc71); }
+
+/* ── Form body ──────────────────────────────────────────────── */
+.form-body {
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+/* ── Fields ─────────────────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.field input,
+.field select {
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #d0d7e2;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: #222;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
+}
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: #0055a5;
+  box-shadow: 0 0 0 3px rgba(0,85,165,0.15);
+}
+
+.req { color: #c0392b; }
+.max { color: #888; font-weight: 400; font-size: 0.75rem; text-transform: none; }
+
+/* ── Two-column row ─────────────────────────────────────────── */
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* ── Radio buttons ──────────────────────────────────────────── */
+.radio-group { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+
+.radio-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  border: 2px solid #d0d7e2;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+.radio-btn input { display: none; }
+.radio-btn:hover { border-color: #0055a5; background: #f0f6ff; }
+.radio-btn.selected { border-color: #0055a5; background: #e8f0ff; color: #003366; }
+
+/* ── Buttons ────────────────────────────────────────────────── */
+.btn-primary {
+  padding: 0.85rem;
+  background: linear-gradient(135deg, #003366, #0055a5);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  text-align: center;
+}
+.btn-primary:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-secondary {
+  padding: 0.7rem;
+  background: #f4f6fb;
+  color: #003366;
+  border: 1.5px solid #d0d7e2;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.2s;
+}
+.btn-secondary:hover { background: #e8edf5; }
+
+.btn-skip {
+  padding: 0.75rem 1.2rem;
+  background: #fff3cd;
+  color: #856404;
+  border: 1.5px solid #ffe08a;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-skip:hover:not(:disabled) { background: #ffe8a0; }
+
+.btn-back {
+  background: none;
+  border: none;
+  color: #0055a5;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  text-align: left;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+.btn-row .btn-primary { flex: 1; }
+
+/* ── Progress bar ───────────────────────────────────────────── */
+.progress-wrap {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0055a5, #00b4d8);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+.progress-label {
+  font-size: 0.82rem;
+  color: #666;
+  text-align: right;
+}
+
+/* ── Student card ───────────────────────────────────────────── */
+.student-card {
+  background: #f7f9fc;
+  border: 1.5px solid #dde3ee;
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  text-align: center;
+}
+.student-meta { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 0.6rem; }
+.badge {
+  background: #e8f0ff;
+  color: #003366;
+  border-radius: 99px;
+  padding: 0.2rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.student-card h2 { font-size: 1.05rem; color: #003366; font-weight: 700; }
+.student-card h3 { font-size: 1.15rem; color: #222; margin-top: 0.2rem; }
+.faculty-line    { font-size: 0.8rem; color: #666; margin-top: 0.4rem; }
+
+/* ── Marks section ──────────────────────────────────────────── */
+.marks-section { display: flex; flex-direction: column; gap: 0.75rem; }
+.marks-row     { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+.total-box {
+  background: #e8f5e9;
+  border: 1.5px solid #a5d6a7;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  color: #2e7d32;
+  text-align: center;
+}
+
+/* ── Summary box ────────────────────────────────────────────── */
+.summary-box {
+  background: #f7f9fc;
+  border: 1.5px solid #dde3ee;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.summary-box p { font-size: 0.9rem; color: #444; }
+
+/* ── Error ──────────────────────────────────────────────────── */
+.err {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  color: #b91c1c;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinner {
+  width: 36px; height: 36px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #0055a5;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 1rem auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .row-2    { grid-template-columns: 1fr; }
+  .marks-row{ grid-template-columns: 1fr; }
+  .card-header h1 { font-size: 1.1rem; }
+}

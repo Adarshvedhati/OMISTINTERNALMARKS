@@ -1,0 +1,252 @@
+{% extends 'aims/base.html' %}
+{% load static %}
+
+{% block title %}Internal Marks Upload Portal{% endblock %}
+
+{% block content %}
+<div class="page-bg">
+  <div class="card">
+
+    <div class="card-header">
+      <div class="college-logo">🎓</div>
+      <h1>Internal Marks Upload Portal</h1>
+      <p>Omega Institute of Science and Technology(A)</p>
+    </div>
+
+    {# Form submits as GET to /marks/ so params are in the URL #}
+    <form method="get" action="{% url 'aims:marks_entry' %}" class="form-body" id="mainForm">
+
+      <!-- Faculty Name -->
+      <div class="field">
+        <label for="faculty_name">Faculty Name <span class="req">*</span></label>
+        <input
+          type="text"
+          id="faculty_name"
+          name="faculty_name"
+          placeholder="Enter your full name"
+          required
+          autocomplete="off"
+        >
+      </div>
+
+      <!-- College -->
+      <div class="field">
+        <label for="college_code">College <span class="req">*</span></label>
+        <select id="college_code" name="college_code" required>
+          <option value="">Select College</option>
+          <option value="2144">2144 — Omega Institute of Science &amp; Technology -(OMIST)</option>
+          <option value="2174">2174 — Omega Institute OF COMPUTER APPLICATIONS AND MANAGEMENT</option>
+        </select>
+      </div>
+
+      <!-- Course + Semester (row) -->
+      <div class="row-2">
+        <div class="field">
+          <label for="course">Course <span class="req">*</span></label>
+          <select id="course" name="course" required>
+            <option value="">Select Course</option>
+            <option value="MCA">MCA</option>
+            <option value="MBA">MBA</option>
+          </select>
+        </div>
+
+        <div class="field" id="semester-field" style="display:none;">
+          <label for="semester">Semester <span class="req">*</span></label>
+          <select id="semester" name="semester">
+            <option value="">Select Semester</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Subject -->
+      <div class="field" id="subject-field" style="display:none;">
+        <label for="subject">Subject <span class="req">*</span></label>
+        <select id="subject" name="subject">
+          <option value="">Select Subject</option>
+        </select>
+      </div>
+
+      <!-- Internal Examination (radio buttons) -->
+      <div class="field" id="internal-field" style="display:none;">
+        <label>Internal Examination <span class="req">*</span></label>
+        <div class="radio-group" id="internal-group"></div>
+        {# Hidden input carries the selected value in form submission #}
+        <input type="hidden" id="internal" name="internal" value="">
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn-primary" id="submit-btn" style="display:none;">
+        Continue to Marks Entry →
+      </button>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── Subject / Internal catalogue (mirrors SUBJECTS & INTERNALS in App.jsx) ──
+const SUBJECTS = {
+  MCA: {
+    2: [
+      "Operating Systems",
+      "Data Base Management System",
+      "Design and Analysis of Algorithms",
+      "Data Engineering with Python",
+      "Machine Learning",
+      "Operations Research"
+    ],
+    4: [
+      "Generative AI",
+      "Software Quality and Testing",
+      "Organization Behaviour"
+    ]
+  },
+  MBA: {
+    2: [
+      "Human Resource Management",
+      "Financial Management",
+      "Operations Research",
+      "Entrepreneurship Development",
+      "Business Research Methods",
+      "Business Law and Ethics"
+    ]
+  }
+};
+
+const INTERNALS = {
+  MCA: ["Internal 1", "Internal 2"],
+  MBA: ["Internal 1", "Internal 2", "Internal 3"]
+};
+
+// ─── Element refs ──────────────────────────────────────────────────────────
+const facultyEl      = document.getElementById('faculty_name');
+const collegeEl      = document.getElementById('college_code');
+const courseEl       = document.getElementById('course');
+const semesterEl     = document.getElementById('semester');
+const semesterField  = document.getElementById('semester-field');
+const subjectEl      = document.getElementById('subject');
+const subjectField   = document.getElementById('subject-field');
+const internalGroup  = document.getElementById('internal-group');
+const internalField  = document.getElementById('internal-field');
+const internalHidden = document.getElementById('internal');
+const submitBtn      = document.getElementById('submit-btn');
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function checkReady() {
+  const ready =
+    facultyEl.value.trim() &&
+    collegeEl.value &&
+    courseEl.value &&
+    semesterEl.value &&
+    subjectEl.value &&
+    internalHidden.value;
+  submitBtn.style.display = ready ? '' : 'none';
+}
+
+function clearSelect(el, placeholder) {
+  el.innerHTML = `<option value="">${placeholder}</option>`;
+}
+
+// ─── Course change → rebuild Semester dropdown ─────────────────────────────
+courseEl.addEventListener('change', () => {
+  const course = courseEl.value;
+
+  clearSelect(semesterEl, 'Select Semester');
+  clearSelect(subjectEl,  'Select Subject');
+  internalGroup.innerHTML = '';
+  internalHidden.value = '';
+  subjectField.style.display  = 'none';
+  internalField.style.display = 'none';
+
+  if (course && SUBJECTS[course]) {
+    Object.keys(SUBJECTS[course]).map(Number).forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent =
+        s === 2 ? 'II Semester' :
+        s === 4 ? 'IV Semester' :
+        `Semester ${s}`;
+      semesterEl.appendChild(opt);
+    });
+    semesterField.style.display = '';
+  } else {
+    semesterField.style.display = 'none';
+  }
+  checkReady();
+});
+
+// ─── Semester change → rebuild Subject dropdown ────────────────────────────
+semesterEl.addEventListener('change', () => {
+  const course   = courseEl.value;
+  const semester = Number(semesterEl.value);
+
+  clearSelect(subjectEl, 'Select Subject');
+  internalGroup.innerHTML = '';
+  internalHidden.value = '';
+  internalField.style.display = 'none';
+
+  const subs = course && semester && SUBJECTS[course]?.[semester];
+  if (subs) {
+    subs.forEach(sub => {
+      const opt = document.createElement('option');
+      opt.value = sub;
+      opt.textContent = sub;
+      subjectEl.appendChild(opt);
+    });
+    subjectField.style.display = '';
+  } else {
+    subjectField.style.display = 'none';
+  }
+  checkReady();
+});
+
+// ─── Subject change → rebuild Internal radio buttons ──────────────────────
+subjectEl.addEventListener('change', () => {
+  const course = courseEl.value;
+  internalGroup.innerHTML = '';
+  internalHidden.value = '';
+
+  if (subjectEl.value && course && INTERNALS[course]) {
+    INTERNALS[course].forEach(int_ => {
+      const label = document.createElement('label');
+      label.className = 'radio-btn';
+
+      const radio = document.createElement('input');
+      radio.type  = 'radio';
+      radio.name  = 'internal_radio';
+      radio.value = int_;
+
+      radio.addEventListener('change', () => {
+        internalHidden.value = int_;
+        document.querySelectorAll('#internal-group .radio-btn')
+          .forEach(lb => lb.classList.remove('selected'));
+        label.classList.add('selected');
+        checkReady();
+      });
+
+      label.appendChild(radio);
+      label.appendChild(document.createTextNode(' ' + int_));
+      internalGroup.appendChild(label);
+    });
+    internalField.style.display = '';
+  } else {
+    internalField.style.display = 'none';
+  }
+  checkReady();
+});
+
+// ─── Other field listeners ─────────────────────────────────────────────────
+facultyEl.addEventListener('input',  checkReady);
+collegeEl.addEventListener('change', checkReady);
+
+// ─── Validate before submit (prevent empty internal sneaking through) ──────
+document.getElementById('mainForm').addEventListener('submit', (e) => {
+  if (!internalHidden.value) {
+    e.preventDefault();
+    alert('Please select an Internal Examination.');
+  }
+});
+</script>
+{% endblock %}
