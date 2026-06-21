@@ -129,8 +129,8 @@ def save_marks(request):
         except (ValueError, TypeError):
             return Response({"error": "marks must be a number."}, status=400)
 
-        if not (0 <= mba_marks <= 20):
-            return Response({"error": "marks must be between 0 and 20."}, status=400)
+        if not (0 <= mba_marks <= 10):
+            return Response({"error": "marks must be between 0 and 10."}, status=400)
 
         mark_obj, created = Marks.objects.update_or_create(
             student=student,
@@ -202,11 +202,11 @@ def download_excel(request):
             "Faculty":        item.faculty_name,
         }
         if item.student.course == "MCA":
-            row["Descriptive Marks (0-20)"] = item.exam_marks
-            row["Assignment Marks (0-10)"]  = item.assignment_marks
-            row["Total Marks (0-30)"]       = item.marks
+            row["Descriptive Marks (10-20)"] = item.exam_marks
+            row["Assignment Marks (5-10)"]  = item.assignment_marks
+            row["Total Marks (15-30)"]       = item.marks
         else:
-            row["Marks (0-20)"] = item.marks
+            row["Marks (10-20)"] = item.marks
         data.append(row)
 
     df = pd.DataFrame(data)
